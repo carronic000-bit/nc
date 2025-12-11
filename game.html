@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mecha Rumble: Neon Arena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Russo+One&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Russo One', sans-serif;
+            color: white;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to bottom, #2b1055, #7597de);
+        }
+
+        canvas {
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .health-bar-container {
+            width: 200px;
+            background: #333;
+            border: 2px solid #fff;
+            height: 25px;
+            position: relative;
+            transform: skewX(-20deg);
+        }
+
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffcc00, #ff0000);
+            width: 100%;
+            transition: width 0.2s;
+        }
+
+        .timer-box {
+            background: #fff;
+            color: #000;
+            padding: 5px 20px;
+            font-size: 2rem;
+            border: 4px solid #000;
+            transform: skewX(-10deg);
+        }
+
+        #menu-overlay, #game-over-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .title-text {
+            font-family: 'Black Ops One', cursive;
+            font-size: 5rem;
+            background: linear-gradient(to bottom, #00f2ff, #0044ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .panel {
+            background: #222;
+            border: 2px solid #444;
+            padding: 2rem;
+            border-radius: 10px;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center; /* Align items vertically */
+            max-width: 900px; /* Slightly wider */
+            box-shadow: 0 0 30px rgba(0,255,255,0.1);
+        }
+
+        .preview-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #111;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        #previewCanvas {
+            background: radial-gradient(circle, #333 0%, #111 80%);
+            border-radius: 4px;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px; /* Reduced gap */
+            min-width: 250px; /* Slightly wider inputs */
+        }
+
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 200px;
+        }
+
+        select, button {
+            padding: 10px;
+            font-family: 'Russo One', sans-serif;
+            font-size: 1.1rem;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        select:hover, button:hover {
+            background: #444;
+            border-color: #00f2ff;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #ff0055, #ff5500);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            margin-top: 20px;
+            transform: skewX(-10deg);
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.5);
+        }
+
+        .btn-primary:active {
+            transform: skewX(-10deg) translate(2px, 2px);
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
+        }
+
+        .control-hint {
+            margin-top: 10px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        #sudden-death-msg {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 6rem;
+            color: red;
+            font-family: 'Black Ops One';
+            text-shadow: 0 0 20px black;
+            pointer-events: none;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 50;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- In-Game UI -->
+    <div id="game-ui" class="ui-layer hidden">
+        <div class="hud-top">
+            <!-- Player Health -->
+            <div>
+                <div style="color:#00f2ff; margin-bottom:5px;">PLAYER 1</div>
+                <div class="health-bar-container">
+                    <div id="p1-hp" class="health-fill"></div>
+                </div>
+            </div>
+            
+            <div class="timer-box" id="timer-display">30</div>
+
+            <!-- Enemy Aggregate Health (Visual approximation) -->
+            <div style="text-align: right;">
+                <div style="color:#ff4444; margin-bottom:5px;">ENEMIES LEFT: <span id="enemy-count">3</span></div>
+                <div class="health-bar-container" style="border-color: #ff4444; transform: skewX(20deg);">
+                    <div id="enemy-hp-agg" class="health-fill" style="float: right;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="sudden-death-msg">SUDDEN DEATH!</div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="menu-overlay">
+        <h1 class="title-text">MECHA RUMBLE</h1>
+        
+        <div class="panel">
+            <!-- New Preview Section -->
+            <div class="preview-container">
+                <canvas id="previewCanvas" width="200" height="200"></canvas>
+                <div style="color: #666; margin-top: 10px; font-size: 0.8rem; font-family: 'Russo One'">UNIT PREVIEW</div>
+            </div>
+
+            <!-- Options Section -->
+            <div class="options-container">
+                <div class="option-group">
+                    <label>TOTAL UNITS</label>
+                    <select id="opt-total">
+                        <option value="1">1 (Solo Practice)</option>
+                        <option value="2">2 (Duel)</option>
+                        <option value="3">3</option>
+                        <option value="4" selected>4 (Standard)</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9 (Chaos)</option>
+                    </select>
+                </div>
+
+                <div class="option-group">
+                    <label>ROBOT STYLE</label>
+                    <select id="opt-style" onchange="updatePreview()">
+                        <option value="standard">Standard MK-1</option>
+                        <option value="heavy">Heavy Tank</option>
+                        <option value="speed">Speed Striker</option>
+                        <option value="walker">Quad Walker</option>
+                    </select>
+                </div>
+
+                <div class="option-group">
+                    <label>WEAPON SYSTEM</label>
+                    <select id="opt-weapon" onchange="updatePreview()">
+                        <option value="saber">Plasma Saber</option>
+                        <option value="axe">Battle Axe</option>
+                        <option value="knuckles">Iron Knuckles</option>
+                        <option value="whip">Energy Whip</option>
+                        <option value="scissors">Titan Scissors</option>
+                    </select>
+                </div>
+
+                <div class="option-group">
+                    <label>PAINT JOB</label>
+                    <select id="opt-color" onchange="updatePreview()">
+                        <option value="#00f2ff">Neon Blue</option>
+                        <option value="#00ff44">Acid Green</option>
+                        <option value="#ff00cc">Hot Pink</option>
+                        <option value="#ffaa00">Industrial Orange</option>
+                        <option value="#ffffff">Ghost White</option>
+                    </select>
+                </div>
+
+                <div class="option-group">
+                    <label>DIFFICULTY</label>
+                    <select id="opt-diff">
+                        <option value="easy">Easy (Training)</option>
+                        <option value="medium" selected>Medium (Combat)</option>
+                        <option value="hard">Hard (Warzone)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-primary" onclick="startGame()">DEPLOY ROBOT</button>
+        <div class="control-hint">WASD to Move/Jump Levels • SPACE to Attack</div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-overlay" class="hidden">
+        <h1 id="result-title" class="title-text">GAME OVER</h1>
+        <button class="btn-primary" onclick="resetGame()">RETURN TO HANGAR</button>
+    </div>
+</div>
+
+<script>
+    /** --- ENGINE CONFIGURATION --- */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Preview Context
+    const previewCanvas = document.getElementById('previewCanvas');
+    const pCtx = previewCanvas.getContext('2d');
+
+    // Game Constants
+    const FPS = 60;
+    const GRAVITY = 0.6;
+    const FRICTION = 0.8;
+    const LEVEL_HEIGHTS = [0.85, 0.6, 0.35]; // % of screen height
+    let PLATFORM_Y = []; // Calculated on resize
+
+    // State
+    let gameActive = false;
+    let suddenDeath = false;
+    let frameId;
+    let timer = 30;
+    let lastTime = 0;
+    let difficulty = 'medium';
+
+    // Entities
+    let player;
+    let bots = [];
+    let particles = [];
+    
+    // Inputs
+    const keys = { w: false, a: false, s: false, d: false, space: false };
+
+    /** --- CLASSES --- */
+
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            this.size = Math.random() * 5 + 2;
+            this.vx = (Math.random() - 0.5) * 10;
+            this.vy = (Math.random() - 0.5) * 10;
+            this.life = 1.0;
+        }
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.life -= 0.05;
+            this.size *= 0.9;
+        }
+        draw(ctx) {
+            ctx.save();
+            ctx.globalAlpha = this.life;
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.size, this.size);
+            ctx.restore();
+        }
+    }
+
+    class Robot {
+        constructor(isPlayer, config, startX, levelIdx) {
+            this.isPlayer = isPlayer;
+            this.x = startX;
+            this.levelIdx = levelIdx;
+            this.y = PLATFORM_Y[levelIdx];
+            this.vx = 0;
+            this.vy = 0;
+            
+            // Config
+            this.color = config.color;
+            this.style = config.style; // standard, heavy, speed, walker
+            this.weapon = config.weapon; // saber, axe, knuckles, whip, scissors
+            
+            // Stats based on style
+            this.width = 50;
+            this.height = 80;
+            this.speed = 5;
+            this.maxHp = 3;
+            this.hp = 3;
+            
+            this.facingRight = Math.random() > 0.5;
+            this.attackCooldown = 0;
+            this.isAttacking = false;
+            this.attackFrame = 0;
+            this.invincibleTimer = 0;
+
+            // Apply Style Stats
+            if (this.style === 'heavy') {
+                this.width = 70; this.height = 90; this.speed = 3; this.maxHp = 4; this.hp = 4;
+            } else if (this.style === 'speed') {
+                this.width = 40; this.height = 70; this.speed = 7;
+            } else if (this.style === 'walker') {
+                this.width = 80; this.height = 60; this.speed = 4;
+            }
+
+            // AI State
+            this.aiState = 'idle'; 
+            this.aiTimer = 0;
+            this.target = null;
+        }
+
+        update() {
+            // Horizontal Physics
+            this.x += this.vx;
+            this.vx *= FRICTION;
+
+            // Level Constraint (Floor)
+            const targetY = PLATFORM_Y[this.levelIdx];
+            
+            // Simple visual jump/land smoothing
+            if (this.y < targetY) {
+                this.vy += GRAVITY;
+            } else if (this.y > targetY) {
+                this.y = targetY;
+                this.vy = 0;
+            }
+            this.y += this.vy;
+
+            // Boundaries
+            if (this.x < 0) this.x = 0;
+            if (this.x > canvas.width - this.width) this.x = canvas.width - this.width;
+
+            // Cooldowns
+            if (this.attackCooldown > 0) this.attackCooldown--;
+            if (this.invincibleTimer > 0) this.invincibleTimer--;
+            
+            // Attack animation
+            if (this.isAttacking) {
+                this.attackFrame++;
+                if (this.attackFrame > 20) {
+                    this.isAttacking = false;
+                    this.attackFrame = 0;
+                }
+            }
+
+            // AI Logic
+            if (!this.isPlayer) this.runAI();
+        }
+
+        changeLevel(dir) {
+            // Cannot change level while attacking or in sudden death (if restricted)
+            if (this.isAttacking) return;
+            
+            if (suddenDeath) {
+                // In sudden death, stuck on level 0
+                return;
+            }
+
+            if (dir === 'up' && this.levelIdx < 2) {
+                this.levelIdx++;
+                this.vy = -15; // Jump effect
+            } else if (dir === 'down' && this.levelIdx > 0) {
+                this.levelIdx--;
+                this.y += 10; // Drop effect
+            }
+        }
+
+        attack() {
+            if (this.attackCooldown <= 0 && !this.isAttacking) {
+                this.isAttacking = true;
+                this.attackCooldown = 40; // frames
+                this.attackFrame = 0;
+                checkHit(this);
+            }
+        }
+
+        takeDamage() {
+            if (this.invincibleTimer > 0) return;
+            this.hp--;
+            this.invincibleTimer = 60; // 1 sec invincibility
+            
+            // Knockback
+            this.vx = this.facingRight ? -10 : 10;
+            this.vy = -5;
+
+            // Particles
+            for(let i=0; i<10; i++) {
+                particles.push(new Particle(this.x + this.width/2, this.y - this.height/2, '#fff'));
+                particles.push(new Particle(this.x + this.width/2, this.y - this.height/2, this.color));
+            }
+        }
+
+        runAI() {
+            if (suddenDeath) {
+                // In sudden death, verify level is 0
+                if (this.levelIdx !== 0) {
+                    this.levelIdx = 0;
+                    this.y = PLATFORM_Y[0];
+                }
+            }
+
+            // Battle Royale Targeting: Target closest living entity (Player or Bot)
+            if (!this.target || this.target.hp <= 0 || Math.random() < 0.02) {
+                const potentialTargets = [player, ...bots].filter(e => e !== this && e.hp > 0);
+                
+                // Find closest target
+                this.target = potentialTargets.reduce((closest, curr) => {
+                    if (!closest) return curr;
+                    const dClosest = Math.abs(this.x - closest.x) + Math.abs(this.levelIdx - closest.levelIdx) * 1000;
+                    const dCurr = Math.abs(this.x - curr.x) + Math.abs(this.levelIdx - curr.levelIdx) * 1000;
+                    return dCurr < dClosest ? curr : closest;
+                }, null);
+            }
+
+            if (!this.target) return; // Everyone dead
+
+            const dist = Math.abs(this.x - this.target.x);
+            const heightDiff = this.levelIdx - this.target.levelIdx;
+
+            // Face target
+            this.facingRight = this.target.x > this.x;
+
+            // Difficulty Settings
+            let aggression = 0.01;
+            let reactionSpeed = 0.05;
+
+            if (difficulty === 'easy') { aggression = 0.005; reactionSpeed = 0.02; }
+            if (difficulty === 'hard') { aggression = 0.05; reactionSpeed = 0.1; }
+
+            // Movement Logic
+            if (heightDiff !== 0 && Math.random() < reactionSpeed) {
+                // Change level to match target
+                if (heightDiff < 0) this.changeLevel('up');
+                else this.changeLevel('down');
+            } else if (dist > 80) {
+                // Move towards
+                this.vx += (this.facingRight ? 1 : -1) * (this.speed * 0.1);
+            } else if (dist < 100 && Math.abs(heightDiff) === 0) {
+                // Attack range
+                if (Math.random() < aggression) {
+                    this.attack();
+                }
+            }
+        }
+
+        draw(ctx) {
+            // Flash if invincible
+            if (this.invincibleTimer > 0 && Math.floor(Date.now() / 50) % 2 === 0) return;
+
+            const cx = this.x + this.width / 2;
+            const cy = this.y;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            if (!this.facingRight) ctx.scale(-1, 1);
+
+            // Draw Body
+            ctx.fillStyle = this.color;
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 3;
+
+            if (this.style === 'walker') {
+                // Legs
+                ctx.beginPath();
+                ctx.moveTo(-20, 0); ctx.lineTo(-30, 20);
+                ctx.moveTo(20, 0); ctx.lineTo(30, 20);
+                ctx.stroke();
+                // Body
+                ctx.fillRect(-40, -60, 80, 40);
+                ctx.strokeRect(-40, -60, 80, 40);
+            } else {
+                // Standard legs
+                ctx.fillStyle = '#333';
+                ctx.fillRect(-15, -20, 10, 20);
+                ctx.fillRect(5, -20, 10, 20);
+                
+                // Torso
+                ctx.fillStyle = this.color;
+                let torsoY = -this.height + 20;
+                let torsoH = this.height - 20;
+                
+                if (this.style === 'heavy') ctx.fillRect(-35, torsoY, 70, torsoH);
+                else if (this.style === 'speed') {
+                    ctx.beginPath();
+                    ctx.moveTo(-20, -20);
+                    ctx.lineTo(20, -20);
+                    ctx.lineTo(0, torsoY);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                else ctx.fillRect(-25, torsoY, 50, torsoH); // Standard
+                
+                if (this.style !== 'speed') ctx.strokeRect(this.style === 'heavy' ? -35 : -25, torsoY, this.style === 'heavy' ? 70 : 50, torsoH);
+            }
+
+            // Head
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(-10, -this.height, 20, 20);
+            // Eye
+            ctx.fillStyle = '#0ff';
+            ctx.fillRect(5, -this.height + 5, 8, 5);
+
+            // Weapon
+            this.drawWeapon(ctx);
+
+            ctx.restore();
+        }
+
+        drawWeapon(ctx) {
+            // Weapon Animation Offset
+            let angle = 0;
+            let ext = 0;
+            if (this.isAttacking) {
+                if (this.weapon === 'knuckles') ext = 20;
+                else angle = Math.PI / 4 + (Math.sin(this.attackFrame * 0.3) * 1.5);
+            }
+
+            ctx.translate(10 + ext, -this.height / 1.5);
+            ctx.rotate(angle);
+
+            ctx.shadowColor = this.color;
+            ctx.shadowBlur = 10;
+
+            if (this.weapon === 'saber') {
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(0, -5, 10, 10); // Hilt
+                ctx.fillStyle = '#0f0'; // Laser
+                ctx.fillRect(10, -3, 60, 6);
+            } else if (this.weapon === 'axe') {
+                ctx.fillStyle = '#666';
+                ctx.fillRect(0, -5, 50, 10); // Handle
+                ctx.fillStyle = '#silver';
+                ctx.beginPath();
+                ctx.moveTo(40, -20);
+                ctx.lineTo(60, 0);
+                ctx.lineTo(40, 20);
+                ctx.fill();
+            } else if (this.weapon === 'knuckles') {
+                ctx.fillStyle = '#555';
+                ctx.fillRect(0, -10, 20, 20);
+                ctx.fillStyle = 'gold';
+                ctx.fillRect(20, -10, 10, 20);
+            } else if (this.weapon === 'whip') {
+                ctx.strokeStyle = '#f0f';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(0,0);
+                ctx.quadraticCurveTo(30, -20, 60 + (this.isAttacking ? 40:0), 0);
+                ctx.stroke();
+            } else if (this.weapon === 'scissors') {
+                ctx.strokeStyle = 'silver';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(0, 0); ctx.lineTo(50, -15);
+                ctx.moveTo(0, 0); ctx.lineTo(50, 15);
+                ctx.stroke();
+            }
+
+            ctx.shadowBlur = 0;
+        }
+
+        getHitbox() {
+            // Returns attacker hit zone
+            let range = 60;
+            if (this.weapon === 'whip' || this.weapon === 'saber') range = 90;
+            
+            const dir = this.facingRight ? 1 : -1;
+            return {
+                x: this.x + (this.width/2) + (dir * 30),
+                y: this.y - this.height,
+                w: range,
+                h: this.height
+            };
+        }
+
+        getBodyBox() {
+            return {
+                x: this.x,
+                y: this.y - this.height,
+                w: this.width,
+                h: this.height
+            };
+        }
+    }
+
+    /** --- ENGINE FUNCTIONS --- */
+
+    function init() {
+        resize();
+        window.addEventListener('resize', resize);
+        window.addEventListener('keydown', handleKey);
+        window.addEventListener('keyup', handleKey);
+        
+        // Show menu
+        document.getElementById('menu-overlay').classList.remove('hidden');
+        
+        // Initial Preview Render
+        updatePreview();
+    }
+
+    function updatePreview() {
+        const style = document.getElementById('opt-style').value;
+        const weapon = document.getElementById('opt-weapon').value;
+        const color = document.getElementById('opt-color').value;
+
+        // Clear preview canvas
+        pCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+        // Draw basic floor in preview
+        pCtx.fillStyle = '#222';
+        pCtx.fillRect(20, 160, 160, 4);
+        pCtx.strokeStyle = '#444';
+        pCtx.strokeRect(20, 160, 160, 4);
+
+        // Create dummy robot
+        const dummyBot = new Robot(true, { style, weapon, color }, 0, 0);
+        
+        // Position dummy in center of preview
+        // Robot draws from feet (y) upwards
+        dummyBot.x = (previewCanvas.width - dummyBot.width) / 2;
+        dummyBot.y = 160; 
+        
+        // Force facing right for preview
+        dummyBot.facingRight = true;
+        // Optional: animate attack in preview? 
+        // For now, static pose is safer to avoid loop logic complexity in menu
+        
+        dummyBot.draw(pCtx);
+    }
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Define Platform Heights
+        PLATFORM_Y[0] = canvas.height * 0.9;
+        PLATFORM_Y[1] = canvas.height * 0.65;
+        PLATFORM_Y[2] = canvas.height * 0.40;
+    }
+
+    function startGame() {
+        const style = document.getElementById('opt-style').value;
+        const weapon = document.getElementById('opt-weapon').value;
+        const color = document.getElementById('opt-color').value;
+        difficulty = document.getElementById('opt-diff').value;
+        const totalUnits = parseInt(document.getElementById('opt-total').value);
+
+        // Reset State
+        gameActive = true;
+        suddenDeath = false;
+        timer = 30;
+        particles = [];
+        bots = [];
+        
+        document.getElementById('sudden-death-msg').style.transform = "translate(-50%, -50%) scale(0)";
+
+        // Create Player
+        // Position player on left side
+        player = new Robot(true, { style, weapon, color }, 100, 0);
+
+        // Generate Enemy Bots
+        const enemyCount = totalUnits - 1;
+        const botStyles = ['standard', 'heavy', 'speed', 'walker'];
+        const botWeapons = ['saber', 'axe', 'knuckles', 'whip', 'scissors'];
+        const botColors = ['#ff0000', '#aaaaaa', '#cc6600', '#00ff00', '#aa00aa', '#ffff00', '#0000ff', '#ffffff'];
+
+        for(let i = 0; i < enemyCount; i++) {
+            const cfg = {
+                style: botStyles[Math.floor(Math.random() * botStyles.length)],
+                weapon: botWeapons[Math.floor(Math.random() * botWeapons.length)],
+                color: botColors[i % botColors.length]
+            };
+            
+            // Distribute positions across the map (avoiding the very left where player starts)
+            const safeWidth = canvas.width - 200;
+            const startX = 200 + (safeWidth / enemyCount) * i;
+            
+            // Randomize starting level
+            const startLevel = Math.floor(Math.random() * 3);
+            
+            bots.push(new Robot(false, cfg, startX, startLevel));
+        }
+
+        // UI Setup
+        document.getElementById('menu-overlay').classList.add('hidden');
+        document.getElementById('game-over-overlay').classList.add('hidden');
+        document.getElementById('game-ui').classList.remove('hidden');
+        updateHUD();
+
+        // Start Loop
+        lastTime = Date.now();
+        loop();
+        
+        // Start Timer
+        startTimer();
+    }
+
+    function startTimer() {
+        const timerInt = setInterval(() => {
+            if(!gameActive) {
+                clearInterval(timerInt);
+                return;
+            }
+            timer--;
+            document.getElementById('timer-display').innerText = timer;
+            
+            if (timer === 0) {
+                clearInterval(timerInt);
+                triggerSuddenDeath();
+            }
+        }, 1000);
+    }
+
+    function triggerSuddenDeath() {
+        suddenDeath = true;
+        const msg = document.getElementById('sudden-death-msg');
+        msg.style.transform = "translate(-50%, -50%) scale(1)";
+        
+        // Reduce HP to 1
+        player.hp = Math.min(player.hp, 1);
+        bots.forEach(b => b.hp = Math.min(b.hp, 1));
+        updateHUD();
+
+        // Force ground level
+        PLATFORM_Y[1] = -1000; // Move offscreen
+        PLATFORM_Y[2] = -1000;
+        
+        player.levelIdx = 0; player.y = PLATFORM_Y[0];
+        bots.forEach(b => { b.levelIdx = 0; b.y = PLATFORM_Y[0]; });
+
+        setTimeout(() => {
+            msg.style.transform = "translate(-50%, -50%) scale(0)";
+        }, 3000);
+    }
+
+    function handleKey(e) {
+        const state = e.type === 'keydown';
+        const k = e.key.toLowerCase();
+
+        if (k === 'w') keys.w = state;
+        if (k === 'a') keys.a = state;
+        if (k === 's') keys.s = state;
+        if (k === 'd') keys.d = state;
+        if (k === ' ') {
+            if(state && !keys.space) player.attack(); // Trigger once on press
+            keys.space = state;
+        }
+    }
+
+    function updatePlayer() {
+        if (player.hp <= 0) return;
+
+        // Move Left/Right
+        if (keys.a) player.vx -= player.speed * 0.2;
+        if (keys.d) player.vx += player.speed * 0.2;
+        if (player.vx > player.speed) player.vx = player.speed;
+        if (player.vx < -player.speed) player.vx = -player.speed;
+        
+        // Face direction
+        if (keys.a) player.facingRight = false;
+        if (keys.d) player.facingRight = true;
+
+        // Jump/Drop levels (Input Handling)
+        if (keys.w && !player.w_locked) {
+            player.changeLevel('up');
+            player.w_locked = true;
+        }
+        if (!keys.w) player.w_locked = false;
+
+        if (keys.s && !player.s_locked) {
+            player.changeLevel('down');
+            player.s_locked = true;
+        }
+        if (!keys.s) player.s_locked = false;
+
+        player.update();
+    }
+
+    function checkHit(attacker) {
+        const hitBox = attacker.getHitbox();
+        
+        // Battle Royale Logic: Bots hit everyone except themselves
+        let targets = [];
+        if (attacker.isPlayer) {
+            targets = bots;
+        } else {
+            targets = [player, ...bots].filter(e => e !== attacker);
+        }
+
+        targets.forEach(victim => {
+            if (victim.hp <= 0) return;
+            // Check level match
+            if (victim.levelIdx !== attacker.levelIdx) return;
+            
+            const body = victim.getBodyBox();
+
+            // AABB Collision
+            if (hitBox.x < body.x + body.w &&
+                hitBox.x + hitBox.w > body.x &&
+                hitBox.y < body.y + body.h &&
+                hitBox.h + hitBox.y > body.y) {
+                
+                victim.takeDamage();
+                updateHUD();
+                checkWinCondition();
+            }
+        });
+    }
+
+    function checkWinCondition() {
+        if (player.hp <= 0) {
+            endGame(false);
+        } else if (bots.length > 0 && bots.every(b => b.hp <= 0)) {
+            // Only trigger win if there were actually bots to fight
+            endGame(true);
+        }
+    }
+
+    function endGame(win) {
+        gameActive = false;
+        setTimeout(() => {
+            const overlay = document.getElementById('game-over-overlay');
+            const title = document.getElementById('result-title');
+            overlay.classList.remove('hidden');
+            
+            if (win) {
+                title.innerText = "YOU WIN!";
+                title.style.background = "linear-gradient(to bottom, #ffd700, #ff8800)";
+                title.style.webkitBackgroundClip = "text";
+                title.style.webkitTextFillColor = "transparent";
+            } else {
+                title.innerText = "ELIMINATED";
+                title.style.background = "linear-gradient(to bottom, #ff0000, #550000)";
+                title.style.webkitBackgroundClip = "text";
+                title.style.webkitTextFillColor = "transparent";
+            }
+        }, 1000);
+    }
+
+    function resetGame() {
+        document.getElementById('game-over-overlay').classList.add('hidden');
+        document.getElementById('menu-overlay').classList.remove('hidden');
+        document.getElementById('game-ui').classList.add('hidden');
+    }
+
+    function updateHUD() {
+        // Player HP
+        const p1Pct = (player.hp / player.maxHp) * 100;
+        document.getElementById('p1-hp').style.width = `${Math.max(0, p1Pct)}%`;
+
+        // Enemy Agg
+        const livingBots = bots.filter(b => b.hp > 0);
+        document.getElementById('enemy-count').innerText = livingBots.length;
+        
+        let totalMax = 0;
+        let totalCur = 0;
+        bots.forEach(b => { totalMax += b.maxHp; totalCur += Math.max(0, b.hp); });
+        
+        const ePct = totalMax === 0 ? 0 : (totalCur / totalMax) * 100;
+        document.getElementById('enemy-hp-agg').style.width = `${ePct}%`;
+    }
+
+    function drawMap() {
+        // Background City Silhouette
+        ctx.fillStyle = '#110022';
+        ctx.fillRect(0, canvas.height - 200, 100, 200);
+        ctx.fillRect(150, canvas.height - 300, 150, 300);
+        ctx.fillRect(350, canvas.height - 150, 80, 150);
+        ctx.fillRect(500, canvas.height - 250, 200, 250);
+        ctx.fillRect(800, canvas.height - 180, 120, 180);
+
+        // Draw Platforms
+        ctx.lineWidth = 5;
+        
+        // Level 0 (Ground)
+        ctx.fillStyle = '#222';
+        ctx.fillRect(0, PLATFORM_Y[0], canvas.width, canvas.height - PLATFORM_Y[0]);
+        ctx.strokeStyle = '#00f2ff';
+        ctx.beginPath(); 
+        ctx.moveTo(0, PLATFORM_Y[0]); ctx.lineTo(canvas.width, PLATFORM_Y[0]);
+        ctx.stroke();
+
+        if (!suddenDeath) {
+            // Level 1
+            const y1 = PLATFORM_Y[1];
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(100, y1, canvas.width - 200, 20);
+            ctx.strokeStyle = '#ff00cc';
+            ctx.strokeRect(100, y1, canvas.width - 200, 20);
+
+            // Level 2
+            const y2 = PLATFORM_Y[2];
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(300, y2, canvas.width - 600, 20);
+            ctx.strokeStyle = '#00ff44';
+            ctx.strokeRect(300, y2, canvas.width - 600, 20);
+        } else {
+            // Danger lines
+            ctx.strokeStyle = 'red';
+            ctx.setLineDash([20, 20]);
+            ctx.beginPath();
+            ctx.moveTo(0, PLATFORM_Y[0] - 20); ctx.lineTo(canvas.width, PLATFORM_Y[0] - 20);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+    }
+
+    function loop() {
+        if (!gameActive) return;
+
+        // Clear
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        drawMap();
+
+        // Update & Draw Bots
+        bots.forEach(b => {
+            if (b.hp > 0) {
+                b.update();
+                b.draw(ctx);
+            }
+        });
+
+        // Update & Draw Player
+        if (player.hp > 0) {
+            updatePlayer();
+            player.draw(ctx);
+        }
+
+        // Particles
+        for (let i = particles.length - 1; i >= 0; i--) {
+            particles[i].update();
+            particles[i].draw(ctx);
+            if (particles[i].life <= 0) particles.splice(i, 1);
+        }
+
+        requestAnimationFrame(loop);
+    }
+
+    // Initialize
+    init();
+
+</script>
+</body>
+</html>

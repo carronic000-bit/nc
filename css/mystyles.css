@@ -1,0 +1,78 @@
+/* 1. GLOBAL RESET & BODY STYLES */
+body {
+    /* Uses the native font of the operating system for a crisp, fast load */
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f0f2f5; /* Soft gray background */
+    color: #333333; 
+    line-height: 1.6; 
+}
+
+/* 2. HEADINGS */
+h1, h2, h3, h4, h5, h6 {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+/* 3. LINKS */
+a {
+    color: #0066cc;       
+    text-decoration: none; 
+    transition: color 0.2s ease; 
+}
+
+a:hover {
+    color: #004499; 
+    text-decoration: underline;
+}
+
+/* 4. CUSTOM "CARD" LAYOUT 
+   This creates the white paper effect behind your text */
+.content-card {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 12px; /* Smooth rounded corners */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Subtle shadow for depth */
+    margin-top: -50px; /* Pulls the content up slightly over the header image for a modern look */
+    margin-bottom: 40px;
+    position: relative; /* Needed for z-index to work */
+    z-index: 2;
+}
+
+/* 5. RESPONSIVE VIDEO WRAPPER 
+   This ensures the YouTube video scales on mobile phones */
+.video-wrapper {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+    height: 0;
+    overflow: hidden;
+    border-radius: 8px;
+    margin: 30px 0; /* Space above and below video */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.video-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* 6. UTILITY */
+.subheading {
+    font-weight: 300;
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+/* ... keep your existing code ... */
+
+/* 7. HEADER TEXT OVERRIDE 
+   This targets the text specifically inside the top image banner */
+.site-heading h1, 
+.site-heading .subheading {
+    color: #ffffff !important; /* Forces the text to be white */
+    text-shadow: 0px 2px 5px rgba(0,0,0,0.6); /* Adds a shadow so it pops against the background */
+}
